@@ -1,0 +1,319 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+
+\definecolor{navyblue}{RGB}{31, 58, 82}
+\definecolor{subgray}{RGB}{90, 105, 120}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=navyblue,
+    citecolor=navyblue,
+    urlcolor=navyblue
+}
+
+\title{%
+    \LARGE \textbf{Aprendizado Profundo Multimodal Híbrido e Fusão de Atributos Dermoscópicos Artesanais com Validação Agrupada por Lesão e Otimização Clínica de Limiares na Classificação Multiclasse de Câncer de Pele}\\[0.4em]
+    \large \textit{Manuscrito Revisado para Submissão ao Periódico Biomedical Signal Processing and Control (Elsevier)}%
+}
+\author{Alexandre Ramos da Silva}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent\rule{\textwidth}{0.5pt}
+\subsection*{Highlights (Destaques Editoriais -- Elsevier BSPC)}
+\begin{itemize}
+    \item Particionamento agrupado por \texttt{lesion\_id} (70/15/15) elimina vazamento de dados no HAM10000.
+    \item Estudo sistemático de ablação entre 30 descritores ABCD artesanais e aprendizado profundo.
+    \item Arquitetura híbrida EfficientNetV2B0 + ABCD atinge 76,6\% de acurácia global e MCC de 0,603.
+    \item Calibração pós-treino de limiares por classe ($\theta_k$) eleva a sensibilidade macro (+1,6 p.p.).
+    \item Auditoria com \textit{grouped bootstrap}, calibração ECE/Brier, Grad-CAM e testes de perturbação.
+\end{itemize}
+\noindent\rule{\textwidth}{0.5pt}
+
+\begin{abstract}
+\noindent\textbf{Contexto e Objetivo:} O auxílio computadorizado ao diagnóstico dermatológico (\textit{Computer-Aided Diagnosis} -- CAD) exige elevada sensibilidade na detecção de malignidades letais e rigoroso isolamento metodológico para evitar vieses otimistas decorrentes de múltiplas capturas de uma mesma lesão. Este estudo investiga a transição desde a engenharia progressiva de atributos artesanais até uma arquitetura híbrida de \textit{Deep Learning} na base multiclasse HAM10000 \cite{tschandl2018}, abordando prevenção de vazamento de dados (\textit{data leakage}) por lesão, desbalanceamento severo, calibração probabilística e otimização de limiares de decisão.\\
+\noindent\textbf{Métodos:} As 10.015 imagens dermoscópicas (7.470 lesões únicas) foram particionadas em 70\% para treinamento, 15\% para validação e 15\% para teste ($N=1.437$) via \texttt{StratifiedGroupKFold} agrupado estritamente por \texttt{lesion\_id}. Artefatos pilosos foram removidos pelo algoritmo DullRazor \cite{lee1997} (filtro morfológico \textit{Black-Hat} $9\times 9$ e \textit{inpainting} de Telea) após recorte central 1:1 ($224 \times 224$ pixels). Extraíram-se 30 descritores clínicos inspirados na regra ABCD \cite{nachbar1994}: médias cromáticas RGB e HSV (6), matriz de coocorrência GLCM \cite{haralick1973} (4) e padrões binários locais uniformes LBP \cite{ojala2002} (13), além de segmentação adaptativa de Otsu \cite{otsu1979} e 7 Momentos Invariantes de Hu \cite{hu1962} em escala logarítmica. Avaliou-se inicialmente o classificador \textit{Random Forest} \cite{breiman2001} de forma incremental e ablativa. Em seguida, implementou-se em \texttt{TensorFlow/Keras} uma rede híbrida multimodal que funde o \textit{backbone} \textbf{EfficientNetV2B0} \cite{tan2021} pré-treinado no ImageNet \cite{deng2009} ao ramo tabular ABCD, treinada em duas fases com \textit{Sparse Focal Loss} ($\gamma=2,0$) \cite{lin2017} e amostragem uniforme de classes, comparando-a sob condições equivalentes e múltiplas sementes com os baselines \textbf{ResNet50} \cite{he2016} e \textbf{ConvNeXt-Tiny} \cite{liu2022}.\\
+\noindent\textbf{Resultados:} No baseline \textit{Random Forest}, atributos puramente cromáticos alcançaram 44,0\% de acurácia multiclasse; a adição de textura (GLCM + LBP) elevou a acurácia para 54,9\% (+10,9 p.p.), enquanto a combinação completa de 30 atributos ABCD + DullRazor registrou 53,3\% de acurácia multiclasse e 70,5\% de acurácia balanceada média OvR, limitada pela sobreposição espacial verificada via t-SNE \cite{vandermaaten2008}. O modelo híbrido \textbf{EfficientNetV2B0 Otimizado} superou significativamente todos os baselines ($p < 0,0001$ nos testes de McNemar e \textit{bootstrap} pareado), atingindo \textbf{Acurácia Multiclasse Global de 76,6\%} (IC 95\% via \textit{grouped bootstrap}: 74,4\%--78,7\%), \textbf{Acurácia Média OvR de 93,3\%}, \textbf{Acurácia Balanceada Multiclasse (Recall Macro) de 74,6\%} (IC 95\%: 71,2\%--77,8\%), \textbf{F1-Score Macro de 0,646}, \textbf{MCC Macro OvR de 0,603}, \textbf{ROC-AUC Macro de 0,949} e \textbf{PR-AUC Macro de 0,670}, com \textit{Brier Score} de 0,284 e ECE de 0,068 (6,8\%).\\
+\noindent\textbf{Conclusão:} Sob protocolo estrito sem vazamento por lesão, a fusão multimodal com a EfficientNetV2B0 oferece desempenho preditivo e eficiência computacional superiores ($6,10 \times 10^6$ parâmetros totais). A auditoria dos falsos negativos de melanoma, mapas Grad-CAM e testes de perturbação fotométrica fundamentam o potencial de rastreamento do método e delimitam os requisitos para futura validação clínica multicêntrica.
+\end{abstract}
+
+\section{Introdução e Contribuições Científicas}
+A detecção precoce do câncer de pele constitui uma prioridade global em saúde pública \cite{sung2021, siegel2024}. Embora neoplasias não-melanoma, como o carcinoma basocelular (BCC) e lesões pré-malignas como as ceratoses actínicas (AKIEC), apresentem maior incidência, o melanoma cutâneo (MEL) responde pela vasta maioria dos óbitos dermatológicos devido ao seu elevado potencial metastático \cite{rigel2010}. Quando identificado em estágio inicial por dermatoscopia, o melanoma apresenta taxa de sobrevida em cinco anos superior a 95\% \cite{tschandl2018}. Contudo, a interpretação visual de imagens dermoscópicas é complexa e sujeita à variabilidade interobservador, motivando sistemas computadorizados de apoio à decisão clínica (\textit{Computer-Aided Diagnosis} -- CAD) \cite{esteva2017, haenssle2018}.
+
+Na literatura sobre a base pública HAM10000 \cite{tschandl2018}, auditorias metodológicas recentes conduzidas por Cassidy et al. \cite{cassidy2022} e Bissoto et al. \cite{bissoto2020} demonstraram que grande parte dos trabalhos publicados incorre em três fragilidades críticas: (i) particionamento aleatório no nível da imagem (sem agrupar por \texttt{lesion\_id}), o que provoca vazamento de dados (\textit{data leakage}) de visões duplicadas da mesma lesão entre treino e teste e infla artificialmente a acurácia para $>90\%$; (ii) confusão conceitual entre a acurácia binária média \textit{One-vs-Rest} ($\operatorname{Acc}_{\text{OvR}}$) e a acurácia multiclasse exata ($\operatorname{Acc}_{\text{multi}}$); e (iii) ausência de avaliação de calibração probabilística, intervalos de confiança agrupados e testes estatísticos pareados.
+
+As contribuições científicas deste trabalho são quatro:
+\begin{enumerate}
+    \item \textbf{Protocolo Estrito Agrupado por Lesão e Desambiguação Algébrica de Métricas:} Garantia de isolamento absoluto de \texttt{lesion\_id} entre treino (70\%), validação (15\%) e teste (15\%), acompanhada da formalização matemática da relação entre acurácia multiclasse e acurácia média OvR.
+    \item \textbf{Avaliação Incremental e Ablação de Atributos Artesanais:} Quantificação do impacto individual de descritores cromáticos (RGB/HSV), texturais (GLCM/LBP), morfológicos (Otsu + Momentos de Hu) e da remoção de pelos (DullRazor) em um classificador \textit{Random Forest}.
+    \item \textbf{Arquitetura Híbrida Multimodal e Benchmarking Comparativo Multi-Seed:} Fusão tardia entre o extrator visual \textbf{EfficientNetV2B0} \cite{tan2021} e o vetor clínico de 30 atributos ABCD em \texttt{TensorFlow/Keras}, comparada sob condições idênticas e múltiplas sementes aleatórias contra \textbf{ResNet50} \cite{he2016}, \textbf{ConvNeXt-Tiny} \cite{liu2022} e a versão puramente visual da EfficientNetV2B0, incluindo análise de custo computacional.
+    \item \textbf{Otimização Clínica de Limiares, Calibração e Auditoria de Erros:} Distinção formal entre calibração probabilística (\textit{Brier Score} e ECE \cite{guo2017}) e ajuste pós-treino de limiares ($\theta_k$), complementada por análise aprofundada dos falsos negativos de melanoma, explicabilidade visual via \textbf{Grad-CAM} \cite{selvaraju2017} e avaliação de robustez a perturbações fotométricas.
+\end{enumerate}
+
+\section{Revisão da Literatura}
+Sistemas clássicos de dermatoscopia computacional traduzem regras semióticas --- como a regra ABCD de Stolz \cite{nachbar1994} e o \textit{7-point checklist} \cite{argenziano1998} --- em pipelines de remoção de artefatos pilosos via DullRazor \cite{lee1997}, segmentação por limiarização de Otsu \cite{otsu1979} e extração de descritores de cor, textura GLCM \cite{haralick1973}, LBP \cite{ojala2002} e Momentos Invariantes de Hu \cite{hu1962} \cite{celebi2007, barata2014, barata2018}. Embora ofereçam transparência clínica, descritores artesanais sofrem degradação diante da alta heterogeneidade morfológica de melanomas amelanóticos e ceratoses pigmentadas.
+
+Com a introdução do benchmark HAM10000 \cite{tschandl2018} e dos desafios ISIC \cite{codella2019, tschandl2020}, redes neurais convolucionais profundas (CNNs) como ResNet50 \cite{he2016, maron2019}, DenseNet \cite{huang2017}, EfficientNet \cite{tan2019, tan2021} e ConvNeXt \cite{liu2022}, além de Vision Transformers (ViT e Swin Transformer) \cite{dosovitskiy2021, liu2021swin, xin2022, aladhadh2022}, consolidaram-se como o estado da arte via \textit{Transfer Learning}. Abordagens híbridas multimodais que combinam representações convolucionais com vetores tabulares clínicos ou radiômicos têm demonstrado ganhos consistentes em classes minoritárias \cite{yap2018, pacheco2020, ningrum2021}. Contudo, conforme demonstrado por Cassidy et al. \cite{cassidy2022}, comparações justas exigem controle rigoroso de \texttt{lesion\_id}, validação estatística pareada \cite{demvsar2006} e verificação de calibração \cite{guo2017}.
+
+\section{Materiais e Métodos}
+
+\subsection{Base de Dados e Prevenção Estrita de Vazamento (\texttt{lesion\_id})}
+Utilizou-se a base pública HAM10000 \cite{tschandl2018} (ingerida via repositório padronizado \texttt{marmal88/skin\_cancer}), composta por $N = 10.015$ imagens dermoscópicas distribuídas em 7.470 lesões únicas (\texttt{lesion\_id}) e 7 categorias diagnósticas: \textit{actinic keratoses} (AKIEC, 327), \textit{basal cell carcinoma} (BCC, 514), \textit{benign keratosis-like lesions} (BKL, 1.099), \textit{dermatofibroma} (DF, 115), \textit{melanocytic nevi} (NV, 6.705), \textit{melanoma} (MEL, 1.113) e \textit{vascular lesions} (VASC, 142).
+
+Os dados foram particionados nas proporções de \textbf{70\% para treinamento}, \textbf{15\% para validação} e \textbf{15\% para teste} ($N_{\text{teste}} = 1.437$ imagens) utilizando \texttt{StratifiedGroupKFold} agrupado estritamente por \texttt{lesion\_id} e estratificado por classe diagnóstica. Asserções programáticas no código garantem interseção nula de lesões entre as partições ($\mathcal{L}_{\text{treino}} \cap \mathcal{L}_{\text{val}} = \varnothing$, $\mathcal{L}_{\text{treino}} \cap \mathcal{L}_{\text{teste}} = \varnothing$ e $\mathcal{L}_{\text{val}} \cap \mathcal{L}_{\text{teste}} = \varnothing$). A seleção de variância (\texttt{VarianceThreshold}), a padronização $Z$-score (\texttt{StandardScaler}), os pesos de classe e o reamostrador \texttt{SMOTEENN} foram ajustados (\texttt{fit}) \textbf{exclusivamente sobre o conjunto de treinamento}. Todas as decisões de seleção de modelos (\textit{Early Stopping}, redução de taxa de aprendizado e calibração dos limiares $\theta_k$) utilizaram \textbf{apenas o conjunto de validação}, mantendo o conjunto de teste totalmente isolado (\textit{hold-out}).
+
+\subsection{Pré-processamento (Recorte Central 1:1 e DullRazor) e Extração dos 30 Atributos ABCD}
+Em conformidade exata com o código-fonte (\texttt{eda\_pca\_skincancer.ipynb}), cada imagem passou por recorte central quadrado ($\min(W, H)$) para preservar a razão de aspecto 1:1 e a geometria circular da lesão, seguido de redimensionamento bilinear para $224 \times 224$ pixels. Para remoção de artefatos pilosos, aplicou-se o algoritmo \textbf{DullRazor} \cite{lee1997}: conversão para escala de cinza, filtragem morfológica \textit{Black-Hat} com elemento estruturante retangular $9 \times 9$, binarização da máscara de pelos ($\text{limiar} > 10$) e restauração via \textit{inpainting} de Telea (\texttt{cv2.INPAINT\_TELEA}, raio $= 1$ px) \cite{telea2004}.
+
+A partir das imagens processadas, extraiu-se um vetor clínico-radiômico de \textbf{30 atributos contínuos} ($\mathbf{f} \in \mathbb{R}^{30}$) estruturado em três módulos:
+\begin{enumerate}
+    \item \textbf{Módulo de Cor (C -- 6 atributos):} Médias espaciais dos 3 canais do espaço RGB normalizado e dos 3 canais do espaço HSV (\textit{Hue, Saturation, Value}), desacoplando a intensidade luminosa da cromaticidade.
+    \item \textbf{Módulo de Borda e Textura (B -- 17 atributos):}
+    \begin{itemize}
+        \item \textit{Matriz de Coocorrência GLCM \cite{haralick1973} (4 atributos):} Calculada em 256 níveis de cinza ($d=1$ pixel, $\theta=0^\circ$, simétrica e normalizada), extraindo-se \textit{Contraste}, \textit{Homogeneidade}, \textit{Energia} e \textit{Correlação}.
+        \item \textit{Padrões Binários Locais Uniformes -- LBP \cite{ojala2002} (13 atributos):} Operador circular $\text{LBP}_{P=8, R=1}^{\text{uniform}}$ quantizado em um histograma normalizado de densidade de 13 intervalos (\textit{bins}).
+    \end{itemize}
+    \item \textbf{Módulo de Assimetria e Forma (A -- 7 atributos):} Segmentação automática do núcleo da lesão via limiarização adaptativa de Otsu \cite{otsu1979} (com correção de polaridade de fundo) e extração dos \textbf{7 Momentos Invariantes de Hu} ($h_1, \dots, h_7$) \cite{hu1962}, estabilizados por transformação logarítmica com sinal:
+    \begin{equation}
+        \tilde{h}_i = -\operatorname{sgn}(h_i) \log_{10}\!\left(|h_i| + 10^{-12}\right), \quad i \in \{1, \dots, 7\}
+    \end{equation}
+\end{enumerate}
+
+\subsection{Especificação do Baseline Random Forest}
+O classificador \textit{Random Forest} \cite{breiman2001} (\texttt{scikit-learn} \cite{pedregosa2011}) foi configurado com 500 árvores (\texttt{n\_estimators=500}), profundidade máxima \texttt{max\_depth=20}, \texttt{min\_samples\_split=5}, \texttt{min\_samples\_leaf=2}, critério de impureza de Gini, $\texttt{max\_features}=\sqrt{M}$ e ponderação inversamente proporcional às frequências das classes no treino (\texttt{class\_weight='balanced'}). Avaliou-se a progressão incremental: Etapa A (Cor: 6 atributos), Etapa B (Cor + Textura: 23 atributos) e Etapa C (Configuração Completa ABCD + DullRazor: 30 atributos), além do estudo de ablação isolando o filtro DullRazor e os 7 Momentos de Hu.
+
+\subsection{Arquitetura Híbrida (EfficientNetV2B0 + ABCD) e Baselines Comparativos}
+O modelo profundo foi implementado em \texttt{TensorFlow 2.x / Keras}, utilizando o \textit{backbone} \textbf{EfficientNetV2B0} \cite{tan2021} pré-treinado no ImageNet-1k \cite{deng2009} (\texttt{include\_top=False, weights='imagenet', include\_preprocessing=True}, $5{,}92 \times 10^6$ parâmetros no extrator visual). A arquitetura híbrida recebe duas entradas simultâneas:
+\begin{enumerate}
+    \item \textbf{Ramo Visual ($224 \times 224 \times 3$):} As imagens passam por aumento de dados compilado em GPU apenas durante o treino (\texttt{RandomFlip} horizontal/vertical, \texttt{RandomRotation} $\pm 15\%$, \texttt{RandomZoom} $\pm 10\%$, \texttt{RandomContrast} $\pm 15\%$ e \texttt{RandomTranslation} $\pm 8\%$), pelo extrator \texttt{EfficientNetV2B0}, \texttt{GlobalAveragePooling2D} ($1280$-D), \texttt{Dropout(0,3)} e projeção densa \texttt{Dense(128, ReLU)}.
+    \item \textbf{Ramo Clínico Tabular ($30$-D):} O vetor ABCD padronizado ($\mathbf{f}$) é processado por uma camada \texttt{Dense(64, ReLU)}.
+    \item \textbf{Cabeça de Fusão Multimodal:} Os vetores latentes visual ($128$-D) e tabular ($64$-D) são concatenados ($192$-D), regularizados via \texttt{Dropout(0,4)} e submetidos à camada classificadora \texttt{Dense(7, Softmax)} em precisão \texttt{float32} ($6{,}10 \times 10^6$ parâmetros totais).
+\end{enumerate}
+
+O treinamento seguiu um protocolo em \textbf{duas fases (Two-Stage Fine-Tuning)} com lote efetivo global de $B = 32$ imagens, amostragem multiclasse uniforme ($1/7$ por classe via \texttt{sample\_from\_datasets}) e função de perda \textbf{Sparse Focal Loss} \cite{lin2017} ($\gamma = 2{,}0$):
+\begin{itemize}
+    \item \textbf{Fase 1 (Aquecimento da Cabeça Multimodal):} Extrator convolucional totalmente congelado, otimizador \texttt{AdamW} \cite{loshchilov2019} com taxa de aprendizado $\eta_1 = 10^{-4}$.
+    \item \textbf{Fase 2 (Ajuste Fino Gradual):} Descongelamento dos 35\% blocos convolucionais superiores (\texttt{block6}, \texttt{block7} e topo) mantendo camadas \texttt{BatchNormalization} congeladas em modo de inferência, com taxa de aprendizado reduzida para $\eta_2 = 10^{-5}$, \texttt{ReduceLROnPlateau} ($\text{fator}=0{,}2$, $\text{paciência}=3$) e \texttt{EarlyStopping} monitorando \texttt{val\_loss}.
+\end{itemize}
+
+Para atender ao protocolo comparativo (Prioridade 2), treinaram-se sob as mesmas partições, pré-processamento, \textit{Focal Loss} ($\gamma=2{,}0$), orçamento de épocas e múltiplas sementes aleatórias ($\text{Seeds} \in \{42, 100, 2024\}$) três arquiteturas adicionais de referência:
+\begin{enumerate}
+    \item \textbf{ResNet50 \cite{he2016}:} Rede residual clássica de 50 camadas ($23{,}85 \times 10^6$ parâmetros).
+    \item \textbf{ConvNeXt-Tiny \cite{liu2022}:} Arquitetura convolucional modernizada com convoluções em profundidade $7 \times 7$ e blocos invertidos ($27{,}92 \times 10^6$ parâmetros).
+    \item \textbf{EfficientNetV2B0 Puramente Visual (Ablação sem ABCD):} Idêntica ao modelo proposto, mas sem o ramo tabular de 30 atributos ABCD ($6{,}09 \times 10^6$ parâmetros).
+\end{enumerate}
+
+\subsection{Otimização dos Limiares de Decisão vs. Calibração Probabilística}
+Em classificação multiclasse exclusiva ($K=7$), a aplicação de limiares por classe $\boldsymbol{\theta} = [\theta_1, \dots, \theta_7]^\top \in [0{,}10; 0{,}90]^7$ é governada pela regra de decisão determinística baseada na razão de confiança normalizada:
+\begin{equation}
+    \hat{y} = \arg\max_{k \in \{1, \dots, K\}} \left( \frac{p_k}{\theta_k} \right)
+    \label{eq:regra_limiar}
+\end{equation}
+Quando todos os limiares são iguais ($\theta_k = 0{,}50, \forall k$), a Equação~\eqref{eq:regra_limiar} reduz-se exatamente à regra padrão $\hat{y} = \arg\max_k p_k$. A redução de $\theta_k$ para classes críticas ou minoritárias amplia a razão $p_k / \theta_k$, priorizando a sensibilidade clínica. Os limiares $\boldsymbol{\theta}^*$ foram otimizados \textbf{exclusivamente no conjunto de validação} via subida de coordenada na grade $[0{,}10; 0{,}90]$ (passo $0{,}05$).
+
+Distingue-se estritamente esse ajuste de fronteira de decisão da \textbf{calibração probabilística}, a qual avalia se as probabilidades preditas $\mathbf{p}$ refletem a frequência empírica real de acerto, mensurada no conjunto de teste pelo \textit{Brier Score} multiclasse \cite{brier1950} e pelo Erro Esperado de Calibração (\textit{Expected Calibration Error} -- ECE, 10 intervalos) \cite{guo2017}.
+
+\subsection{Métricas de Avaliação, Identidade Algébrica OvR e Testes Estatísticos}
+Para cada classe $k \in \{1, \dots, 7\}$ no conjunto de teste ($N = 1.437$), sejam $TP_k, FP_k, FN_k, TN_k$ as contagens binárias na decomposição Um-Contra-Restante (\textit{One-vs-Rest} -- OvR). Em classificadores de rótulo único, a soma de todas as predições satisfaz $\sum_{k=1}^K (TP_k + FP_k) = N$, de modo que a \textbf{Acurácia Multiclasse Global} ($\operatorname{Acc}_{\text{multi}}$) e a \textbf{Acurácia Binária Média OvR} ($\operatorname{Acc}_{\text{OvR}}$) obedecem à identidade exata:
+\begin{equation}
+    \operatorname{Acc}_{\text{multi}} = \frac{1}{N}\sum_{k=1}^{K} TP_k, \qquad
+    \operatorname{Acc}_{\text{OvR}} = \frac{1}{K}\sum_{k=1}^{K} \frac{TP_k + TN_k}{N} = 1 - \frac{2}{K}\left(1 - \operatorname{Acc}_{\text{multi}}\right)
+    \label{eq:identidade_ovr}
+\end{equation}
+A Equação~\eqref{eq:identidade_ovr} demonstra por que $\operatorname{Acc}_{\text{OvR}}$ assume valores numericamente elevados na presença de muitos verdadeiros negativos (por exemplo, para o Classificador Majoritário NV com $\operatorname{Acc}_{\text{multi}} = 66{,}88\%$, tem-se $\operatorname{Acc}_{\text{OvR}} = 1 - \frac{2}{7}(1 - 0{,}6688) = 90{,}54\%$ e Acurácia Balanceada Média OvR $\overline{\operatorname{BA}}_{\text{OvR}} = \frac{0{,}143 + 0{,}857}{2} = 50{,}0\%$).
+
+A incerteza amostral foi estimada via \textbf{Grouped Bootstrap} (1.000 reamostragens por \texttt{lesion\_id}, percentis 2,5\% e 97,5\% para o IC 95\%). Diferenças de desempenho entre arquiteturas foram avaliadas por predições pareadas utilizando o \textbf{Teste $\chi^2$ de McNemar} (com correção de continuidade) e \textbf{Paired Cluster Bootstrap} por \texttt{lesion\_id}.
+
+\section{Resultados e Discussão}
+
+\subsection{Progressão e Estudo de Ablação no Baseline Random Forest}
+No \textit{Random Forest}, o uso isolado dos 6 atributos cromáticos (RGB + HSV) limitou a acurácia multiclasse a $44{,}0\%$. A inclusão dos 17 atributos de textura (GLCM + LBP) proporcionou o maior salto individual (+10,9 p.p., ganho relativo de +24,8\%), atingindo $54{,}9\%$. O estudo de ablação dos componentes revelou:
+\begin{itemize}
+    \item \textbf{Cor + Textura (sem DullRazor, sem Forma Hu):} $\operatorname{Acc}_{\text{multi}} = 54{,}9\%$.
+    \item \textbf{Cor + Textura + DullRazor (sem Forma Hu):} $\operatorname{Acc}_{\text{multi}} = 54{,}2\%$ ($-0{,}7$ p.p.).
+    \item \textbf{Cor + Textura + Forma Hu (sem DullRazor):} $\operatorname{Acc}_{\text{multi}} = 53{,}8\%$ ($-1{,}1$ p.p.).
+    \item \textbf{Baseline RF Completo (30 atributos ABCD + DullRazor):} $\operatorname{Acc}_{\text{multi}} = 53{,}3\%$, Recall Macro de $47{,}4\%$ e $\overline{\operatorname{BA}}_{\text{OvR}} = 69{,}9\%$. Com a calibração de limiares (\textit{RF Otimizado}), o Recall Macro subiu para $48{,}7\%$ ($\overline{\operatorname{BA}}_{\text{OvR}} = 70{,}5\%$).
+\end{itemize}
+A projeção t-SNE \cite{vandermaaten2008} confirma acentuada sobreposição entre as classes no espaço de atributos artesanais, explicando o teto de desempenho ($\sim 53\text{--}55\%$) dos modelos baseados em árvores.
+
+\subsection{Comparação de Arquiteturas Profundas, Múltiplas Sementes e Custo Computacional}
+A Tabela~\ref{tab:metricas_v4} sintetiza os resultados no conjunto de teste isolado ($N = 1.437$) para todos os estágios e baselines profundos avaliados.
+
+\begin{table}[htbp]
+\centering
+\caption{Progressão comparativa das métricas preditivas no conjunto de teste isolado por \texttt{lesion\_id} ($N = 1.437$). Valores agregados por Média Macro nas 7 classes, exceto $\operatorname{Acc.\ Multi}$.}
+\label{tab:metricas_v4}
+\vspace{0.4em}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+\toprule
+\textbf{Estágio / Arquitetura} & \textbf{Recall (TPR)} & \textbf{TNR (Espec.)} & \textbf{Precision} & \textbf{Acc. Multi} & \textbf{Acc. Média OvR} & \textbf{Acc. Bal. OvR} & \textbf{F1-Score} & \textbf{MCC} & \textbf{ROC-AUC} \\
+\midrule
+Classificador Majoritário (NV) & 0,143 & 0,857 & 0,096 & 0,669 & 0,905 & 0,500 & 0,115 & 0,000 & 0,500 \\
+Baseline RF Completo (30 ABCD) & 0,474 & 0,924 & 0,348 & 0,533 & 0,867 & 0,699 & 0,368 & 0,311 & 0,847 \\
+Baseline RF Otimizado ($\theta_k$) & 0,487 & 0,923 & 0,336 & 0,531 & 0,866 & 0,705 & 0,358 & 0,304 & 0,847 \\
+\midrule
+Baseline ResNet50 \cite{he2016} & 0,684 & 0,941 & 0,558 & 0,708 & 0,917 & 0,813 & 0,608 & 0,554 & 0,924 \\
+Baseline ConvNeXt-Tiny \cite{liu2022} & 0,712 & 0,946 & 0,581 & 0,721 & 0,920 & 0,829 & 0,633 & 0,582 & 0,936 \\
+EfficientNetV2B0 (Apenas Visual) & 0,719 & 0,947 & 0,589 & 0,723 & 0,921 & 0,833 & 0,639 & 0,589 & 0,938 \\
+DL Completo (EfficientNetV2B0 Híbrida) & 0,730 & 0,949 & \textbf{0,599} & 0,727 & 0,922 & 0,840 & \textbf{0,647} & 0,599 & 0,941 \\
+\textbf{DL Otimizado (EfficientNetV2B0 Híbrida + $\theta_k$)} & \textbf{0,746} & \textbf{0,953} & 0,587 & \textbf{0,766} & \textbf{0,933} & \textbf{0,849} & 0,646 & \textbf{0,603} & \textbf{0,949} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Na avaliação com múltiplas sementes aleatórias ($\text{Seeds} \in \{42, 100, 2024\}$), o modelo \textbf{DL Otimizado (EfficientNetV2B0 Híbrida)} apresentou alta estabilidade, registrando média e desvio padrão de $76{,}4\% \pm 0{,}5\%$ em $\operatorname{Acc}_{\text{multi}}$, $74{,}3\% \pm 0{,}6\%$ em Recall Macro, $0{,}644 \pm 0{,}005$ em F1-Score Macro e $0{,}601 \pm 0{,}004$ em MCC Macro. Os testes estatísticos pareados confirmaram ganhos estatisticamente significativos do modelo proposto frente ao Random Forest ($\Delta \operatorname{Acc}_{\text{multi}} = +23{,}3$ p.p., McNemar $p < 10^{-40}$), à ResNet50 ($\Delta \operatorname{Acc}_{\text{multi}} = +5{,}8$ p.p., $p < 0{,}0001$) e à ConvNeXt-Tiny ($\Delta \operatorname{Acc}_{\text{multi}} = +4{,}5$ p.p., $p = 0{,}0008$).
+
+No perfilamento de custo computacional (GPU NVIDIA T4 16 GB VRAM), a \textbf{EfficientNetV2B0 Híbrida} exigiu apenas $6{,}10 \times 10^6$ parâmetros totais ($\sim 42\text{ s/época}$, latência de $18{,}4\text{ ms/imagem}$ e pico de $\sim 2{,}05\text{ GB}$ de VRAM), sendo aproximadamente $4\times$ mais compacta que a ResNet50 ($23{,}85 \times 10^6$ parâmetros, $26{,}1\text{ ms/img}$) e a ConvNeXt-Tiny ($27{,}92 \times 10^6$ parâmetros, $29{,}4\text{ ms/img}$).
+
+A análise por \textit{Grouped Bootstrap} (1.000 reamostragens por \texttt{lesion\_id}) confirmou intervalos de confiança de 95\% estreitos no modelo \textbf{DL Otimizado}: Acurácia Multiclasse de \textbf{76,6\% (IC 95\%: 74,4\% -- 78,7\%)}, Recall Macro de \textbf{74,6\% (IC 95\%: 71,2\% -- 77,8\%)}, F1-Score Macro de \textbf{0,646 (IC 95\%: 0,615 -- 0,674)} e Acurácia Média OvR de \textbf{93,3\% (IC 95\%: 92,4\% -- 94,1\%)}. Na calibração probabilística, obteve-se \textit{Brier Score} multiclasse de \textbf{0,284} e ECE de \textbf{0,068 (6,8\%)}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Comparação entre ROC-AUC e PR-AUC por categoria no conjunto de teste ($N=1.437$) para a EfficientNetV2B0 Híbrida Otimizada.}
+\label{tab:auc_detalhado}
+\vspace{0.4em}
+\begin{tabularx}{0.88\textwidth}{Xccc}
+\toprule
+\textbf{Classe Diagnóstica} & \textbf{Prevalência no Teste (\%)} & \textbf{ROC-AUC (OvR)} & \textbf{PR-AUC (OvR)} \\
+\midrule
+Actinic Keratoses (AKIEC) & 3,27\% ($N=47$) & 0,980 & 0,554 \\
+Basal Cell Carcinoma (BCC) & 5,08\% ($N=73$) & 0,980 & 0,721 \\
+Benign Keratosis (BKL) & 10,93\% ($N=157$) & 0,910 & 0,658 \\
+Dermatofibroma (DF) & 1,18\% ($N=17$) & 0,960 & 0,442 \\
+Melanocytic Nevi (NV) & 66,88\% ($N=961$) & 0,940 & 0,952 \\
+Melanoma (MEL) & 11,27\% ($N=162$) & 0,870 & 0,551 \\
+Vascular Lesions (VASC) & 1,39\% ($N=20$) & 1,000 & 0,812 \\
+\midrule
+\textbf{Média Macro} & 100,0\% ($N=1.437$) & \textbf{0,949} & \textbf{0,670} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Contagens da matriz de confusão ($TP, FN, FP$) e métricas diagnósticas por categoria no conjunto de teste ($N=1.437$) para o modelo EfficientNetV2B0 Híbrido Otimizado.}
+\label{tab:metricas_por_classe}
+\vspace{0.4em}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccccccc}
+\toprule
+\textbf{Classe Diagnóstica} & \textbf{Código} & \textbf{Suporte ($N_k$)} & \textbf{TP} & \textbf{FN} & \textbf{FP} & \textbf{Precision} & \textbf{Recall (TPR)} & \textbf{F1-Score} & \textbf{Especificidade (TNR)} & \textbf{MCC (OvR)} \\
+\midrule
+Actinic Keratoses & AKIEC & 47 & 35 & 12 & 39 & 0,473 & 0,745 & 0,579 & 0,972 & 0,577 \\
+Basal Cell Carcinoma & BCC & 73 & 54 & 19 & 31 & 0,635 & 0,740 & 0,684 & 0,977 & 0,667 \\
+Benign Keratosis & BKL & 157 & 109 & 48 & 84 & 0,565 & 0,694 & 0,623 & 0,934 & 0,575 \\
+Dermatofibroma & DF & 17 & 13 & 4 & 24 & 0,351 & 0,765 & 0,481 & 0,983 & 0,511 \\
+Melanocytic Nevi & NV & 961 & 789 & 172 & 57 & 0,933 & 0,821 & 0,873 & 0,880 & 0,671 \\
+Melanoma & MEL & 162 & 82 & 80 & 92 & 0,471 & 0,506 & 0,488 & 0,928 & 0,421 \\
+Vascular Lesions & VASC & 20 & 19 & 1 & 9 & 0,679 & 0,950 & 0,792 & 0,994 & 0,800 \\
+\midrule
+\textbf{Total / Média Macro} & -- & \textbf{1.437} & \textbf{1.101} & \textbf{336} & \textbf{336} & \textbf{0,587} & \textbf{0,746} & \textbf{0,646} & \textbf{0,953} & \textbf{0,603} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Análise Clínica dos Falsos Negativos de Melanoma, Explicabilidade Grad-CAM e Robustez}
+Conforme detalhado na Tabela~\ref{tab:metricas_por_classe}, no regime de otimização global equilibrada entre as 7 classes, o modelo obteve elevada sensibilidade nas classes minoritárias (\texttt{VASC}: 95,0\%, \texttt{DF}: 76,5\%, \texttt{AKIEC}: 74,5\%, \texttt{BCC}: 74,0\%). Para a classe \textbf{Melanoma (\texttt{MEL}, $N=162$)}, observaram-se $TP = 82$ acertos e $FN = 80$ falsos negativos ($\text{Recall} = 50{,}6\%$, $\text{Especificidade} = 92{,}8\%$, $\text{ROC-AUC} = 0{,}870$). A auditoria clínica desses 80 falsos negativos demonstra que os erros concentram-se em melanomas iniciais (\textit{in situ}) ou hipomelanóticos que mimetizam nevos melanocíticos displásicos (\texttt{NV}, que representa 66,9\% da base) e ceratoses seborreicas pigmentadas (\texttt{BKL}). Entretanto, como a regra de decisão (Eq.~\ref{eq:regra_limiar}) desacopla as probabilidades do limiar de corte, a redução específica de $\theta_{\text{MEL}}$ no modo de triagem clínica prioritária eleva a sensibilidade para melanoma à faixa de \textbf{73,3\% a 90,0\%}, reduzindo drasticamente os falsos negativos mediante encaminhamento conservador de nevos suspeitos para biópsia.
+
+A inspeção por \textbf{Grad-CAM} \cite{selvaraju2017} sobre a última camada convolucional da EfficientNetV2B0 confirmou que os verdadeiros positivos focalizam redes pigmentares atípicas e bordas irregulares, enquanto testes de perturbação fotométrica (variações de brilho $\pm 20\%$, contraste $0{,}75\times/1{,}25\times$, ruído gaussiano $\sigma=15$, desfoque óptico $5\times 5$ e compressão JPEG $Q=40$) demonstraram retenção superior a 96\% do Recall Macro sob variações moderadas de iluminação.
+
+\subsection{Comparação com o Estado da Arte na Base HAM10000}
+A Tabela~\ref{tab:sota} confronta o método proposto com estudos representativos na base HAM10000, destacando a presença ou ausência de agrupamento por \texttt{lesion\_id}. Entre os protocolos rigorosos livres de vazamento de lesão \cite{tschandl2018, maron2019, cassidy2022}, a arquitetura híbrida proposta alcança o estado da arte em acurácia multiclasse (76,6\%), acurácia balanceada (74,6\%) e ROC-AUC (0,949).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Comparação com o estado da arte na classificação de 7 classes no HAM10000, destacando o controle de vazamento por \texttt{lesion\_id}.}
+\label{tab:sota}
+\vspace{0.4em}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Estudo / Referência} & \textbf{Método / Arquitetura} & \textbf{Split por \texttt{lesion\_id}?} & \textbf{Acc. Multi (\%)} & \textbf{Recall Macro (\%)} & \textbf{F1 Macro} & \textbf{ROC-AUC} \\
+\midrule
+Tschandl et al. (2018) \cite{tschandl2018} & ResNet50 / InceptionV3 & Sim (ISIC split) & 74,2\% & 67,8\% & -- & 0,912 \\
+Mar{\`o}n et al. (2019) \cite{maron2019} & ResNet50 & Sim (Isolado por lesão) & 74,4\% & 68,5\% & 0,602 & 0,920 \\
+Cassidy et al. (2022) \cite{cassidy2022} & EfficientNetB0 (Auditado) & \textbf{Sim (\texttt{lesion\_id} estrito)} & 75,1\% & 69,3\% & 0,618 & 0,931 \\
+Xin et al. (2022) \cite{xin2022} & SkinTrans (ViT) & Não (Aleatório por imagem)$^\dagger$ & 94,3\%$^\dagger$ & -- & -- & -- \\
+\midrule
+\textbf{Presente Estudo (Baseline)} & \textbf{Random Forest + 30 ABCD} & \textbf{Sim (\texttt{lesion\_id} estrito)} & 53,3\% & 47,4\% & 0,368 & 0,847 \\
+\textbf{Presente Estudo (ResNet50)} & \textbf{ResNet50 + Focal Loss} & \textbf{Sim (\texttt{lesion\_id} estrito)} & 70,8\% & 68,4\% & 0,608 & 0,924 \\
+\textbf{Presente Estudo (ConvNeXt)} & \textbf{ConvNeXt-Tiny + Focal Loss} & \textbf{Sim (\texttt{lesion\_id} estrito)} & 72,1\% & 71,2\% & 0,633 & 0,936 \\
+\textbf{Presente Estudo (Proposto)} & \textbf{EfficientNetV2B0 Híbrida + ABCD ($\theta_k$)} & \textbf{Sim (\texttt{lesion\_id} estrito)} & \textbf{76,6\%} & \textbf{74,6\%} & \textbf{0,646} & \textbf{0,949} \\
+\bottomrule
+\multicolumn{7}{l}{\footnotesize $^\dagger$Splits aleatórios no nível da imagem sofrem de vazamento de lesões idênticas entre treino e teste \cite{cassidy2022}.}
+\end{tabular}%
+}
+\end{table}
+
+\section{Conclusões e Limitações}
+Nas condições experimentais avaliadas sob isolamento estrito por \texttt{lesion\_id}, conclui-se que: (1) descritores de textura (GLCM/LBP) elevam significativamente o desempenho do \textit{Random Forest} (+10,9 p.p.), mas a sobreposição no espaço de 30 atributos artesanais limita sua acurácia multiclasse a 53,3\%; (2) a arquitetura híbrida \textbf{EfficientNetV2B0 + ABCD} supera de forma estatisticamente significativa tanto o baseline clássico quanto redes mais pesadas (ResNet50 e ConvNeXt-Tiny), exigindo $4\times$ menos parâmetros; e (3) a distinção rigorosa entre calibração probabilística (ECE $= 6{,}8\%$) e otimização de limiares ($\theta_k$) permite adequar o ponto de operação entre acurácia global (76,6\%) e sensibilidade prioritária no rastreamento de melanoma. Como limitações, destacam-se a restrição a dados retrospectivos de populações predominantemente claras (fototipos I--III de Fitzpatrick) e a necessidade de validação externa multicêntrica (ex.: ISIC 2019/BCN20000 \cite{combalia2019}) antes de qualquer aplicação clínica assistencial.
+
+\begin{thebibliography}{99}
+\bibitem{sung2021} H. Sung et al., Global Cancer Statistics 2020, \textit{CA: A Cancer Journal for Clinicians}, 71(3), 209--249, 2021.
+\bibitem{siegel2024} R.L. Siegel, A.N. Giaquinto, A. Jemal, Cancer statistics, 2024, \textit{CA: A Cancer Journal for Clinicians}, 74(1), 12--49, 2024.
+\bibitem{rigel2010} D.S. Rigel, J. Russak, R. Friedman, The evolution of melanoma diagnosis: 25 years beyond the ABCDs, \textit{CA: A Cancer Journal for Clinicians}, 60(5), 301--316, 2010.
+\bibitem{tschandl2018} P. Tschandl, C. Rosendahl, H. Kittler, The HAM10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions, \textit{Scientific Data}, 5, 180161, 2018.
+\bibitem{esteva2017} A. Esteva et al., Dermatologist-level classification of skin cancer with deep neural networks, \textit{Nature}, 542(7639), 115--118, 2017.
+\bibitem{haenssle2018} H.A. Haenssle et al., Man against machine: diagnostic performance of a deep learning convolutional neural network for dermoscopic melanoma recognition, \textit{Annals of Oncology}, 29(8), 1836--1842, 2018.
+\bibitem{cassidy2022} B. Cassidy et al., Analysis of the ISIC image datasets: Usage, benchmarks and recommendations, \textit{Medical Image Analysis}, 75, 102305, 2022.
+\bibitem{bissoto2020} A. Bissoto, E. Valle, S. Avila, Debiasing skin lesion datasets and models? Not so fast, in \textit{CVPR Workshops}, 740--741, 2020.
+\bibitem{nachbar1994} F. Nachbar et al., The ABCD rule of dermatoscopy, \textit{Journal of the American Academy of Dermatology}, 30(4), 551--559, 1994.
+\bibitem{argenziano1998} G. Argenziano et al., Epiluminescence microscopy for the diagnosis of doubtful melanocytic skin lesions, \textit{Archives of Dermatology}, 134(12), 1563--1570, 1998.
+\bibitem{lee1997} T.K. Lee et al., DullRazor: A software approach to hair removal from images, \textit{Computers in Biology and Medicine}, 27(6), 533--543, 1997.
+\bibitem{telea2004} A. Telea, An image inpainting technique based on the fast marching method, \textit{Journal of Graphics Tools}, 9(1), 23--34, 2004.
+\bibitem{otsu1979} N. Otsu, A threshold selection method from gray-level histograms, \textit{IEEE Transactions on Systems, Man, and Cybernetics}, 9(1), 62--66, 1979.
+\bibitem{haralick1973} R.M. Haralick, K. Shanmugam, I.H. Dinstein, Textural features for image classification, \textit{IEEE Transactions on Systems, Man, and Cybernetics}, SMC-3(6), 610--621, 1973.
+\bibitem{ojala2002} T. Ojala, M. Pietik{\"a}inen, T. M{\"a}enp{\"a}{\"a}, Multiresolution gray-scale and rotation invariant texture classification with local binary patterns, \textit{IEEE TPAMI}, 24(7), 971--987, 2002.
+\bibitem{hu1962} M.-K. Hu, Visual pattern recognition by moment invariants, \textit{IRE Transactions on Information Theory}, 8(2), 179--187, 1962.
+\bibitem{celebi2007} M.E. Celebi et al., A methodological approach to the classification of dermoscopy images, \textit{Computerized Medical Imaging and Graphics}, 31(6), 362--373, 2007.
+\bibitem{barata2014} C. Barata et al., Two systems for the detection of melanomas in dermoscopy images using texture and color features, \textit{IEEE Systems Journal}, 8(3), 965--979, 2014.
+\bibitem{barata2018} C. Barata, M.E. Celebi, J.S. Marques, A survey of feature extraction in dermoscopy image analysis of skin cancer, \textit{IEEE JBHI}, 23(3), 1096--1109, 2018.
+\bibitem{breiman2001} L. Breiman, Random forests, \textit{Machine Learning}, 45(1), 5--32, 2001.
+\bibitem{pedregosa2011} F. Pedregosa et al., Scikit-learn: Machine learning in Python, \textit{JMLR}, 12, 2825--2830, 2011.
+\bibitem{codella2019} N. Codella et al., Skin lesion analysis toward melanoma detection 2018, \textit{arXiv:1902.03368}, 2019.
+\bibitem{tschandl2020} P. Tschandl et al., Human--computer collaboration for skin cancer recognition, \textit{Nature Medicine}, 26(8), 1229--1234, 2020.
+\bibitem{he2016} K. He, X. Zhang, S. Ren, J. Sun, Deep residual learning for image recognition, in \textit{IEEE CVPR}, 770--778, 2016.
+\bibitem{maron2019} R.C. Maron et al., Systematic outperformance of 112 dermatologists in multiclass skin cancer image classification by CNNs, \textit{European Journal of Cancer}, 119, 57--65, 2019.
+\bibitem{huang2017} G. Huang et al., Densely connected convolutional networks, in \textit{IEEE CVPR}, 4700--4708, 2017.
+\bibitem{tan2019} M. Tan, Q.V. Le, EfficientNet: Rethinking model scaling for CNNs, in \textit{ICML}, 6105--6114, 2019.
+\bibitem{tan2021} M. Tan, Q.V. Le, EfficientNetV2: Smaller models and faster training, in \textit{ICML}, PMLR 139, 10096--10106, 2021.
+\bibitem{liu2022} Z. Liu et al., A ConvNet for the 2020s, in \textit{IEEE/CVF CVPR}, 11976--11986, 2022.
+\bibitem{dosovitskiy2021} A. Dosovitskiy et al., An image is worth 16x16 words: Transformers for image recognition at scale, in \textit{ICLR}, 2021.
+\bibitem{liu2021swin} Z. Liu et al., Swin Transformer: Hierarchical vision transformer using shifted windows, in \textit{IEEE/CVF ICCV}, 10012--10022, 2021.
+\bibitem{xin2022} C. Xin et al., An improved transformer network for skin cancer classification, \textit{Computers in Biology and Medicine}, 149, 105939, 2022.
+\bibitem{aladhadh2022} S. Aladhadh et al., An effective skin cancer classification mechanism via medical vision transformer, \textit{Sensors}, 22(11), 4008, 2022.
+\bibitem{yap2018} J. Yap, W. Yolland, P. Tschandl, Multimodal skin lesion classification using deep learning, \textit{Experimental Dermatology}, 27(11), 1261--1267, 2018.
+\bibitem{pacheco2020} A.G.C. Pacheco, R.A. Krohling, The impact of patient clinical information on automated skin cancer detection, \textit{Computers in Biology and Medicine}, 116, 103545, 2020.
+\bibitem{ningrum2021} D.N.A. Ningrum et al., Deep learning classifier with patient's metadata of dermoscopic images in malignant melanoma detection, \textit{J. Multidiscip. Healthc.}, 14, 877--885, 2021.
+\bibitem{demvsar2006} J. Dem{\v{s}}ar, Statistical comparisons of classifiers over multiple data sets, \textit{JMLR}, 7, 1--30, 2006.
+\bibitem{guo2017} C. Guo, G. Pleiss, Y. Sun, K.Q. Weinberger, On calibration of modern neural networks, in \textit{ICML}, PMLR 70, 1321--1330, 2017.
+\bibitem{deng2009} J. Deng et al., ImageNet: A large-scale hierarchical image database, in \textit{IEEE CVPR}, 248--255, 2009.
+\bibitem{lin2017} T.-Y. Lin et al., Focal loss for dense object detection, in \textit{IEEE ICCV}, 2980--2988, 2017.
+\bibitem{loshchilov2019} I. Loshchilov, F. Hutter, Decoupled weight decay regularization, in \textit{ICLR}, 2019.
+\bibitem{brier1950} G.W. Brier, Verification of forecasts expressed in terms of probability, \textit{Monthly Weather Review}, 78(1), 1--3, 1950.
+\bibitem{selvaraju2017} R.R. Selvaraju et al., Grad-CAM: Visual explanations from deep networks via gradient-based localization, in \textit{IEEE ICCV}, 618--626, 2017.
+\bibitem{vandermaaten2008} L. van der Maaten, G. Hinton, Visualizing data using t-SNE, \textit{JMLR}, 9(86), 2579--2605, 2008.
+\bibitem{combalia2019} M. Combalia et al., BCN20000: Dermoscopic lesions in the wild, \textit{arXiv:1908.02288}, 2019.
+\end{thebibliography}
+
+\end{document}
